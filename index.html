@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="./css/style.css">
+    <title>Lista de Alunos com Filtros</title>
+    
+</head>
+<body>
+
+    <div id="container">
+        <div class="titulo-container">
+            <h2>Lista de Alunos</h2>
+            <svg id="abrir-modal-btn" class="filtro-icone" xmlns="http://www.w3.org/2000/svg" height="26px" viewBox="0 0 24 24" width="26px" fill="#3498db">
+                <path d="M0 0h24v24H0V0z" fill="none"/>
+                <path d="M2.96 2.05c-.4-.41-.12-1.05.42-1.05h17.24c.54 0 .82.64.42 1.05L14 10.46V19a1 1 0 0 1-.4.8l-4 3a1 1 0 0 1-1.6-.8v-8.54L2.96 2.05z"/>
+            </svg>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Matrícula</th>
+                    <th>Centro</th>
+                    <th>Curso</th>
+                    <th id="probabilidade-header">Probabilidade de Evasão</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-alunos"></tbody>
+        </table>
+    </div>
+
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Filtros de Visualização</h3>
+            
+            <div class="filtro-grupo">
+                <label for="filtro-centro">Filtrar por Centro:</label>
+                <select id="filtro-centro">
+                    <option value="todos">Todos os Centros</option>
+                    <option value="CET">Centro de Ciências Exatas e Tecnologia (CET)</option>
+                    <option value="CSH">Centro de Ciências Sociais e Humanas (CSH)</option>
+                    <option value="CCS">Centro de Ciências da Saúde (CCS)</option>
+                </select>
+            </div>
+
+            <div class="filtro-grupo">
+                <label for="filtro-curso">Filtrar por Curso:</label>
+                <select id="filtro-curso">
+                    <option value="todos">Todos os Cursos</option>
+                </select>
+            </div>
+
+            <div class="filtro-grupo">
+                <label for="filtro-ano">Ano de Referência:</label>
+                <select id="filtro-ano">
+                    <option value="2020">2020</option>
+                    <option value="2021">2021</option>
+                    <option value="2022">2022</option>
+                    <option value="2023">2023</option>
+                    <option value="2024" selected>2024</option>
+                </select>
+            </div>
+
+            <div class="modal-botoes">
+                <button id="fechar-modal-btn">Fechar</button>
+                <button id="aplicar-btn">Aplicar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const todosOsCursos = [ "Engenharia de Software", "Ciência da Computação", "Administração", "Direito", "Medicina", "Arquitetura e Urbanismo", "Psicologia", "Jornalismo" ];
+        const cursoParaCentro = { "Engenharia de Software": "CET", "Ciência da Computação": "CET", "Arquitetura e Urbanismo": "CET", "Administração": "CSH", "Direito": "CSH", "Psicologia": "CSH", "Jornalismo": "CSH", "Medicina": "CCS" };
+        const nomes = ["Ana", "Bruno", "Carlos", "Daniela", "Eduardo", "Fernanda", "Gustavo", "Helena", "Igor", "Juliana", "Lucas", "Mariana", "Nicolas", "Olivia", "Pedro", "Quintino", "Rafaela", "Sergio", "Tatiana", "Vinicius"];
+        const sobrenomes = ["Silva", "Santos", "Oliveira", "Souza", "Rodrigues", "Ferreira", "Alves", "Pereira", "Lima", "Gomes", "Costa", "Ribeiro", "Martins", "Carvalho"];
+        const alunos = [];
+
+        for (let i = 1; i <= 100; i++) {
+            const nomeCompleto = `${nomes[Math.floor(Math.random() * nomes.length)]} ${sobrenomes[Math.floor(Math.random() * sobrenomes.length)]}`;
+            const matricula = 2025000 + i;
+            const curso = todosOsCursos[Math.floor(Math.random() * todosOsCursos.length)];
+            const centro = cursoParaCentro[curso];
+            const probEvasaoAnual = {};
+            for (let ano = 2020; ano <= 2024; ano++) {
+                probEvasaoAnual[ano] = Math.floor(Math.random() * 80) + 5;
+            }
+            alunos.push({ nome: nomeCompleto, matricula, centro, curso, probEvasao: probEvasaoAnual });
+        }
+        
+        // --- ELEMENTOS DO DOM ---
+        const tabelaAlunos = document.getElementById('tabela-alunos');
+        const filtroCentro = document.getElementById('filtro-centro');
+        const filtroCurso = document.getElementById('filtro-curso');
+        const filtroAno = document.getElementById('filtro-ano');
+        const probabilidadeHeader = document.getElementById('probabilidade-header');
+        
+        // --- ELEMENTOS DO MODAL ---
+        const modalOverlay = document.getElementById('modal-overlay');
+        const abrirModalBtn = document.getElementById('abrir-modal-btn');
+        const aplicarBtn = document.getElementById('aplicar-btn');
+        const fecharModalBtn = document.getElementById('fechar-modal-btn');
+
+        localStorage.setItem('bancoDeAlunos', JSON.stringify(alunos));
+        // --- FUNÇÕES ---
+        function popularTabela(listaAlunos, anoSelecionado) {
+            tabelaAlunos.innerHTML = '';
+            listaAlunos.forEach(aluno => {
+                const tr = document.createElement('tr');
+                // A coluna do ano foi removida daqui
+                tr.innerHTML = `
+                    <td><a href="detalhes.html?matricula=${aluno.matricula}">${aluno.nome}</a></td>
+                    <td>${aluno.matricula}</td>
+                    <td>${aluno.centro}</td>
+                    <td>${aluno.curso}</td>
+                    <td>${aluno.probEvasao[anoSelecionado]}%</td>
+                `;
+                tabelaAlunos.appendChild(tr);
+            });
+        }
+
+        function atualizarFiltroCursos() {
+            const centroSelecionado = filtroCentro.value;
+            filtroCurso.innerHTML = '<option value="todos">Todos os Cursos</option>';
+            const cursosDisponiveis = centroSelecionado === 'todos'
+                ? todosOsCursos
+                : todosOsCursos.filter(curso => cursoParaCentro[curso] === centroSelecionado);
+            cursosDisponiveis.forEach(curso => {
+                const option = document.createElement('option');
+                option.value = curso;
+                option.textContent = curso;
+                filtroCurso.appendChild(option);
+            });
+        }
+
+        function aplicarFiltros() {
+            const centroSelecionado = filtroCentro.value;
+            const cursoSelecionado = filtroCurso.value;
+            const anoSelecionado = filtroAno.value;
+            
+            // Atualiza o texto do cabeçalho da tabela
+            probabilidadeHeader.textContent = `Probabilidade de Evasão (${anoSelecionado})`;
+
+            let alunosFiltrados = alunos;
+            if (centroSelecionado !== 'todos') {
+                alunosFiltrados = alunosFiltrados.filter(aluno => aluno.centro === centroSelecionado);
+            }
+            if (cursoSelecionado !== 'todos') {
+                alunosFiltrados = alunosFiltrados.filter(aluno => aluno.curso === cursoSelecionado);
+            }
+            popularTabela(alunosFiltrados, anoSelecionado);
+        }
+
+        // --- EVENT LISTENERS ---
+        abrirModalBtn.addEventListener('click', () => {
+            modalOverlay.classList.add('visivel');
+        });
+
+        function fecharModal() {
+            modalOverlay.classList.remove('visivel');
+        }
+
+        fecharModalBtn.addEventListener('click', fecharModal);
+
+        aplicarBtn.addEventListener('click', () => {
+            aplicarFiltros();
+            fecharModal();
+        });
+
+        modalOverlay.addEventListener('click', (event) => {
+            if (event.target === modalOverlay) {
+                fecharModal();
+            }
+        });
+
+        filtroCentro.addEventListener('change', atualizarFiltroCursos);
+
+        // --- INICIALIZAÇÃO ---
+        atualizarFiltroCursos();
+        aplicarFiltros(); 
+    </script>
+</body>
+</html>
